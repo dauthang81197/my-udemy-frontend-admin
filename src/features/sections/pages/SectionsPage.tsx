@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button, Card, Space, Typography, Breadcrumb } from 'antd';
-import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { PlusOutlined, ArrowLeftOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useSections } from '../hooks/useSections';
-import { useCreateSection, useUpdateSection, useDeleteSection } from '../hooks/useSectionActions';
+import {
+  useCreateSection,
+  useUpdateSection,
+  useDeleteSection,
+  useDownloadSectionTemplate,
+  useImportSections,
+} from '../hooks/useSectionActions';
 import { SectionTable } from '../components/SectionTable';
 import { SectionModal } from '../components/SectionModal';
 import { AppPagination } from '@/components/common/AppPagination';
@@ -21,10 +27,22 @@ export function SectionsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Section | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const { data, isLoading } = useSections({ page: page - 1, size: pageSize });
   const { mutate: createSection, isPending: creating } = useCreateSection();
   const { mutate: updateSection, isPending: updating } = useUpdateSection();
   const { mutate: deleteSection } = useDeleteSection();
+  const { mutate: downloadTemplate, isPending: downloading } = useDownloadSectionTemplate();
+  const { mutate: importSections, isPending: importing } = useImportSections();
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importSections({ courseId, file });
+    }
+    e.target.value = '';
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -62,9 +80,32 @@ export function SectionsPage() {
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/courses')} />
           <Title level={3} style={{ margin: 0 }}>Sections</Title>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          New Section
-        </Button>
+        <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            loading={downloading}
+            onClick={() => downloadTemplate(courseId)}
+          >
+            Download Template
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            style={{ display: 'none' }}
+            onChange={handleImportFileChange}
+          />
+          <Button
+            icon={<UploadOutlined />}
+            loading={importing}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            New Section
+          </Button>
+        </Space>
       </Space>
 
       <Card>
