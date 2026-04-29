@@ -4,6 +4,7 @@ import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types/a
 import type { Section, CreateSectionRequest, UpdateSectionRequest } from '@/types/section.types';
 
 const BASE = `${env.courseServicePrefix}/admin/sections`;
+const TEMPLATE_BASE = `${env.courseServicePrefix}/admin/templates/courses`;
 
 export const sectionApi = {
   getAll: (params?: PaginationParams) =>
@@ -20,4 +21,19 @@ export const sectionApi = {
 
   delete: (id: string) =>
     axiosInstance.delete<ApiResponse<Section>>(`${BASE}:id`, { params: { id } }),
+
+  downloadTemplate: (courseId: string) =>
+    axiosInstance.get<Blob>(`${TEMPLATE_BASE}/:id/sections`, {
+      params: { id: courseId },
+      responseType: 'blob',
+    }),
+
+  importSections: (courseId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axiosInstance.post<ApiResponse<Section[]>>(`${env.courseServicePrefix}/admin/sections/import`, formData, {
+      params: { courseId },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

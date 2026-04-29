@@ -6,6 +6,34 @@ import { SECTIONS_QUERY_KEY } from './useSections';
 import type { Section } from '@/types/section.types';
 import type { PaginatedResponse } from '@/types/api.types';
 
+export function useDownloadSectionTemplate() {
+  return useMutation({
+    mutationFn: (courseId: string) => sectionApi.downloadTemplate(courseId),
+    onSuccess: (response) => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'section_import_template.xlsx';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    },
+    onError: (err) => message.error(getApiErrorMessage(err)),
+  });
+}
+
+export function useImportSections() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, file }: { courseId: string; file: File }) =>
+      sectionApi.importSections(courseId, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [SECTIONS_QUERY_KEY] });
+      message.success('Sections imported successfully');
+    },
+    onError: (err) => message.error(getApiErrorMessage(err)),
+  });
+}
+
 export function useCreateSection() {
   const qc = useQueryClient();
   return useMutation({
