@@ -29,7 +29,7 @@ export function SectionsPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data, isLoading } = useSections({ page: page - 1, size: pageSize });
+  const { data, isLoading } = useSections({ page: page - 1, size: pageSize, sort: ['title,asc'] });
   const { mutate: createSection, isPending: creating } = useCreateSection();
   const { mutate: updateSection, isPending: updating } = useUpdateSection();
   const { mutate: deleteSection } = useDeleteSection();
