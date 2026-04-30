@@ -1,10 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
+import type { AxiosResponse } from 'axios';
 import { sectionApi } from '@/api/sectionApi';
 import { getApiErrorMessage } from '@/utils/helpers';
 import { SECTIONS_QUERY_KEY } from './useSections';
 import type { Section } from '@/types/section.types';
 import type { PaginatedResponse } from '@/types/api.types';
+
+type SectionsCache = AxiosResponse<PaginatedResponse<Section>>;
 
 export function useDownloadSectionTemplate() {
   return useMutation({
@@ -53,12 +56,15 @@ export function useUpdateSection() {
       sectionApi.update(id, data),
     onMutate: async ({ id, data }) => {
       await qc.cancelQueries({ queryKey: [SECTIONS_QUERY_KEY] });
-      const snapshots = qc.getQueriesData<PaginatedResponse<Section>>({ queryKey: [SECTIONS_QUERY_KEY] });
+      const snapshots = qc.getQueriesData<SectionsCache>({ queryKey: [SECTIONS_QUERY_KEY] });
       snapshots.forEach(([key, old]) => {
         if (!old) return;
-        qc.setQueryData<PaginatedResponse<Section>>(key, {
+        qc.setQueryData<SectionsCache>(key, {
           ...old,
-          data: old.data.map((s) => (s.id === id ? { ...s, ...data } : s)),
+          data: {
+            ...old.data,
+            data: old.data.data.map((s) => (s.id === id ? { ...s, ...data } : s)),
+          },
         });
       });
       return { snapshots };
@@ -78,13 +84,16 @@ export function useDeleteSection() {
     mutationFn: sectionApi.delete,
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: [SECTIONS_QUERY_KEY] });
-      const snapshots = qc.getQueriesData<PaginatedResponse<Section>>({ queryKey: [SECTIONS_QUERY_KEY] });
+      const snapshots = qc.getQueriesData<SectionsCache>({ queryKey: [SECTIONS_QUERY_KEY] });
       snapshots.forEach(([key, old]) => {
         if (!old) return;
-        qc.setQueryData<PaginatedResponse<Section>>(key, {
+        qc.setQueryData<SectionsCache>(key, {
           ...old,
-          data: old.data.filter((s) => s.id !== id),
-          totalItems: old.totalItems - 1,
+          data: {
+            ...old.data,
+            data: old.data.data.filter((s) => s.id !== id),
+            totalItems: old.data.totalItems - 1,
+          },
         });
       });
       return { snapshots };

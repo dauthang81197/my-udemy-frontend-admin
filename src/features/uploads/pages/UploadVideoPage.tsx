@@ -1,111 +1,65 @@
 import { useState } from 'react';
-import { Card, Typography, Upload, Button, Progress, Alert, Space, message } from 'antd';
-import { InboxOutlined, CopyOutlined } from '@ant-design/icons';
-import type { UploadFile, UploadProps } from 'antd';
+import { Button, Card, Space, Typography } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import { useVideos } from '../hooks/useVideos';
+import { useDeleteVideo } from '../hooks/useVideoActions';
+import { VideoTable } from '../components/VideoTable';
+import { VideoUploadModal } from '../components/VideoUploadModal';
+import { VideoPreviewModal } from '../components/VideoPreviewModal';
+import { AppPagination } from '@/components/common/AppPagination';
+import { SkeletonTable } from '@/components/common/SkeletonTable';
+import type { VideoFile } from '@/types/video.types';
 
-const { Title, Text } = Typography;
-const { Dragger } = Upload;
+const { Title } = Typography;
 
 export function UploadVideoPage() {
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<VideoFile | null>(null);
 
-  const handleUpload = () => {
-    if (!fileList.length) {
-      message.warning('Please select a file first');
-      return;
-    }
-    setUploading(true);
-    setProgress(0);
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          setUploadedUrl('https://example.com/videos/uploaded-video.mp4');
-          message.success('Upload complete!');
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
-  };
-
-  const props: UploadProps = {
-    multiple: false,
-    beforeUpload: (file) => {
-      const isVideo = file.type.startsWith('video/');
-      if (!isVideo) {
-        message.error('Only video files are allowed');
-        return false;
-      }
-      const isUnder2G = file.size / 1024 / 1024 / 1024 < 2;
-      if (!isUnder2G) {
-        message.error('File must be smaller than 2GB');
-        return false;
-      }
-      setFileList([file]);
-      setUploadedUrl(null);
-      return false;
-    },
-    fileList,
-    onRemove: () => {
-      setFileList([]);
-      setUploadedUrl(null);
-    },
-  };
+  const { data, isLoading } = useVideos({ page: page - 1, size: pageSize });
+  const { mutate: deleteVideo } = useDeleteVideo();
 
   return (
     <div>
-      <Title level={3} style={{ marginBottom: 24 }}>Upload Video</Title>
-      <Card style={{ maxWidth: 640 }}>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Dragger {...props} style={{ borderRadius: 8 }}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">Click or drag video file to upload</p>
-            <p className="ant-upload-hint">
-              Supports MP4, MOV, AVI up to 2GB
-            </p>
-          </Dragger>
+      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Title level={3} style={{ margin: 0 }}>Upload Video</Title>
+        <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
+          Upload Video
+        </Button>
+      </Space>
 
-          {uploading && <Progress percent={progress} status="active" />}
-
-          {uploadedUrl && (
-            <Alert
-              type="success"
-              message="Upload Successful"
-              description={
-                <Space>
-                  <Text code style={{ wordBreak: 'break-all' }}>{uploadedUrl}</Text>
-                  <Button
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => {
-                      navigator.clipboard.writeText(uploadedUrl);
-                      message.success('URL copied');
-                    }}
-                  />
-                </Space>
-              }
+      <Card>
+        {isLoading ? (
+          <SkeletonTable rows={pageSize} columns={6} />
+        ) : (
+          <>
+            <VideoTable
+              data={data?.data ?? []}
+              loading={isLoading}
+              onPreview={setPreviewVideo}
+              onDelete={(id) => deleteVideo(id)}
             />
-          )}
-
-          <Button
-            type="primary"
-            onClick={handleUpload}
-            loading={uploading}
-            disabled={!fileList.length}
-            block
-          >
-            {uploading ? 'Uploading...' : 'Start Upload'}
-          </Button>
-        </Space>
+            <AppPagination
+              page={page}
+              pageSize={pageSize}
+              total={data?.totalItems ?? 0}
+              onChange={(p, ps) => { setPage(p); setPageSize(ps); }}
+            />
+          </>
+        )}
       </Card>
+
+      <VideoUploadModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
+
+      <VideoPreviewModal
+        video={previewVideo}
+        onClose={() => setPreviewVideo(null)}
+      />
     </div>
   );
 }

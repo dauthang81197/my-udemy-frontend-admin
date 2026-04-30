@@ -17,7 +17,7 @@ export interface PaginatedResponse<T> {
 export interface PaginationParams {
   page?: number;
   size?: number;
-  sort?: string;
+  sort?: string[];
 }
 
 export interface ApiError {
