@@ -6,7 +6,7 @@ export interface Lesson {
   title: string;
   description: string;
   type: LessonType;
-  videoUrl: string;
+  videoFileId: string;
   isPreview: boolean;
   sortOrder: number;
   status: LessonStatus;
@@ -17,7 +17,7 @@ export interface CreateLessonRequest {
   title: string;
   description?: string;
   type?: LessonType;
-  videoUrl?: string;
+  videoFileId?: string;
   isPreview?: boolean;
   sortOrder?: number;
 }
@@ -26,7 +26,7 @@ export interface UpdateLessonRequest {
   title: string;
   description?: string;
   type?: LessonType;
-  videoUrl?: string;
+  videoFileId?: string;
   isPreview?: boolean;
   sortOrder?: number;
 }

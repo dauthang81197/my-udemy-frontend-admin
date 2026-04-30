@@ -4,6 +4,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AppModal } from '@/components/common/AppModal';
 import { lessonSchema, type LessonFormValues } from '../schemas/lessonSchema';
+import { VideoSelect } from './VideoSelect';
 import type { Lesson } from '@/types/lesson.types';
 
 interface LessonModalProps {
@@ -28,7 +29,7 @@ export function LessonModal({ open, editing, sectionId, loading, onClose, onSubm
       title: '',
       description: '',
       type: 'VIDEO',
-      videoUrl: '',
+      videoFileId: undefined,
       isPreview: false,
       sortOrder: 0,
       sectionId,
@@ -43,13 +44,13 @@ export function LessonModal({ open, editing, sectionId, loading, onClose, onSubm
         title: editing.title,
         description: editing.description ?? '',
         type: editing.type,
-        videoUrl: editing.videoUrl ?? '',
+        videoFileId: editing.videoFileId || undefined,
         isPreview: editing.isPreview,
         sortOrder: editing.sortOrder,
         sectionId,
       });
     } else {
-      reset({ title: '', description: '', type: 'VIDEO', videoUrl: '', isPreview: false, sortOrder: 0, sectionId });
+      reset({ title: '', description: '', type: 'VIDEO', videoFileId: undefined, isPreview: false, sortOrder: 0, sectionId });
     }
   }, [editing, sectionId, reset, open]);
 
@@ -95,14 +96,16 @@ export function LessonModal({ open, editing, sectionId, loading, onClose, onSubm
 
         {lessonType === 'VIDEO' && (
           <Form.Item
-            label="Video URL"
-            validateStatus={errors.videoUrl ? 'error' : ''}
-            help={errors.videoUrl?.message}
+            label="Video"
+            validateStatus={errors.videoFileId ? 'error' : ''}
+            help={errors.videoFileId?.message}
           >
             <Controller
-              name="videoUrl"
+              name="videoFileId"
               control={control}
-              render={({ field }) => <Input {...field} placeholder="https://example.com/video.mp4" />}
+              render={({ field }) => (
+                <VideoSelect value={field.value} onChange={field.onChange} />
+              )}
             />
           </Form.Item>
         )}
