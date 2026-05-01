@@ -1,14 +1,19 @@
-import { Table, Button, Space, Popconfirm, Tag, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined, AppstoreOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router';
-import type { ColumnsType } from 'antd/es/table';
-import type { Course } from '@/types/course.types';
-import { StatusBadge } from '@/components/common/StatusBadge';
+import { Table, Button, Space, Popconfirm, Tag, Tooltip } from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  AppstoreOutlined,
+  CheckOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router";
+import type { ColumnsType } from "antd/es/table";
+import type { Course } from "@/types/course.types";
+import { StatusBadge } from "@/components/common/StatusBadge";
 
 const LEVEL_COLOR: Record<string, string> = {
-  BEGINNER: 'green',
-  INTERMEDIATE: 'orange',
-  ADVANCED: 'red',
+  BEGINNER: "green",
+  INTERMEDIATE: "orange",
+  ADVANCED: "red",
 };
 
 interface CourseTableProps {
@@ -16,35 +21,42 @@ interface CourseTableProps {
   loading: boolean;
   onEdit: (course: Course) => void;
   onDelete: (id: string) => void;
+  onPublish: (id: string) => void;
 }
 
-export function CourseTable({ data, loading, onEdit, onDelete }: CourseTableProps) {
+export function CourseTable({
+  data,
+  loading,
+  onEdit,
+  onDelete,
+  onPublish,
+}: CourseTableProps) {
   const navigate = useNavigate();
 
   const columns: ColumnsType<Course> = [
     {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
       ellipsis: true,
     },
     {
-      title: 'Level',
-      dataIndex: 'level',
-      key: 'level',
+      title: "Level",
+      dataIndex: "level",
+      key: "level",
       width: 130,
       render: (level: string) => <Tag color={LEVEL_COLOR[level]}>{level}</Tag>,
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
       width: 110,
       render: (status: string) => <StatusBadge status={status} />,
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       width: 160,
       render: (_, record) => (
         <Space>
@@ -54,9 +66,6 @@ export function CourseTable({ data, loading, onEdit, onDelete }: CourseTableProp
               icon={<AppstoreOutlined />}
               onClick={() => navigate(`/courses/${record.id}/sections`)}
             />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
           </Tooltip>
           <Tooltip title="Delete">
             <Popconfirm
@@ -68,6 +77,22 @@ export function CourseTable({ data, loading, onEdit, onDelete }: CourseTableProp
             >
               <Button size="small" danger icon={<DeleteOutlined />} />
             </Popconfirm>
+          </Tooltip>
+
+          <Tooltip title="Edit">
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => onEdit(record)}
+            />
+          </Tooltip>
+
+          <Tooltip title="Public">
+            <Button
+              size="small"
+              icon={<CheckOutlined />}
+              onClick={() => onPublish(record.id)}
+            />
           </Tooltip>
         </Space>
       ),
