@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import { Button, Card, Space, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import { useCourses } from '../hooks/useCourses';
-import { useCreateCourse, useUpdateCourse, useDeleteCourse } from '../hooks/useCourseActions';
-import { CourseTable } from '../components/CourseTable';
-import { CourseModal } from '../components/CourseModal';
-import { AppPagination } from '@/components/common/AppPagination';
-import { SkeletonTable } from '@/components/common/SkeletonTable';
-import type { Course } from '@/types/course.types';
-import type { CourseFormValues } from '../schemas/courseSchema';
+import { useState } from "react";
+import { Button, Card, Space, Typography } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
+import { useCourses } from "../hooks/useCourses";
+import {
+  useCreateCourse,
+  useUpdateCourse,
+  useDeleteCourse,
+  usePublishCourse,
+} from "../hooks/useCourseActions";
+import { CourseTable } from "../components/CourseTable";
+import { CourseModal } from "../components/CourseModal";
+import { AppPagination } from "@/components/common/AppPagination";
+import { SkeletonTable } from "@/components/common/SkeletonTable";
+import type { Course } from "@/types/course.types";
+import type { CourseFormValues } from "../schemas/courseSchema";
 
 const { Title } = Typography;
 
@@ -22,6 +27,7 @@ export function CoursesPage() {
   const { mutate: createCourse, isPending: creating } = useCreateCourse();
   const { mutate: updateCourse, isPending: updating } = useUpdateCourse();
   const { mutate: deleteCourse } = useDeleteCourse();
+  const { mutate: publishCourse } = usePublishCourse();
 
   const openCreate = () => {
     setEditing(null);
@@ -44,10 +50,22 @@ export function CoursesPage() {
     }
   };
 
+  const handlePublish = (id: string) => {
+    publishCourse(id);
+  };
+
   return (
     <div>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={3} style={{ margin: 0 }}>Courses</Title>
+      <Space
+        style={{
+          width: "100%",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <Title level={3} style={{ margin: 0 }}>
+          Courses
+        </Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           New Course
         </Button>
@@ -61,6 +79,7 @@ export function CoursesPage() {
             <CourseTable
               data={data?.data ?? []}
               loading={isLoading}
+              onPublish={(id) => handlePublish(id)}
               onEdit={openEdit}
               onDelete={(id) => deleteCourse(id)}
             />
@@ -68,7 +87,10 @@ export function CoursesPage() {
               page={page}
               pageSize={pageSize}
               total={data?.totalItems ?? 0}
-              onChange={(p, ps) => { setPage(p); setPageSize(ps); }}
+              onChange={(p, ps) => {
+                setPage(p);
+                setPageSize(ps);
+              }}
             />
           </>
         )}
