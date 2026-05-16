@@ -1,5 +1,5 @@
 import { Table, Button, Popconfirm, Space, Tag, Typography, Tooltip } from 'antd';
-import { DeleteOutlined, CopyOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { message } from 'antd';
 import type { VideoFile } from '@/types/video.types';
@@ -9,7 +9,6 @@ const { Text } = Typography;
 interface VideoTableProps {
   data: VideoFile[];
   loading: boolean;
-  onPreview: (video: VideoFile) => void;
   onDelete: (id: string) => void;
 }
 
@@ -21,31 +20,26 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
-export function VideoTable({ data, loading, onPreview, onDelete }: VideoTableProps) {
+export function VideoTable({ data, loading, onDelete }: VideoTableProps) {
   const columns: ColumnsType<VideoFile> = [
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Section',
+      dataIndex: 'nameSection',
+      key: 'nameSection',
+      width: 160,
       ellipsis: true,
-      render: (name: string, record) => (
-        <Space
-          style={{ cursor: 'pointer' }}
-          onClick={() => onPreview(record)}
-        >
-          <PlayCircleOutlined style={{ color: '#1677ff', fontSize: 18 }} />
-          <Text strong style={{ color: '#1677ff' }}>{name}</Text>
-        </Space>
+      render: (nameSection: string) => (
+        <Text type="secondary">{nameSection ?? '—'}</Text>
       ),
     },
     {
-      title: 'File',
+      title: 'Original Filename',
       dataIndex: 'originalFilename',
       key: 'originalFilename',
       ellipsis: true,
       render: (filename: string, record) => (
         <Space>
-          <Text type="secondary" style={{ maxWidth: 280, display: 'inline-block' }} ellipsis>
+          <Text type="secondary" style={{ maxWidth: 240, display: 'inline-block' }} ellipsis>
             {filename}
           </Text>
           <Tooltip title="Copy public URL">

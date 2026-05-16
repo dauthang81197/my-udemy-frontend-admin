@@ -38,7 +38,6 @@ export function UploadVideoPage() {
             <VideoTable
               data={data?.data ?? []}
               loading={isLoading}
-              onPreview={setPreviewVideo}
               onDelete={(id) => deleteVideo(id)}
             />
             <AppPagination
