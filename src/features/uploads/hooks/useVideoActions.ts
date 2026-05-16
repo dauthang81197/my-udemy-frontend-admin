@@ -24,6 +24,26 @@ export function useUploadVideo() {
   });
 }
 
+export function useUploadMultipleVideos() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      nameSection,
+      files,
+      onProgress,
+    }: {
+      nameSection: string;
+      files: File[];
+      onProgress?: (percent: number) => void;
+    }) => videoApi.uploadMultiple(nameSection, files, onProgress),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: [VIDEOS_QUERY_KEY] });
+      message.success(`${res.data.data?.length ?? 0} video(s) uploaded successfully`);
+    },
+    onError: (err) => message.error(getApiErrorMessage(err)),
+  });
+}
+
 export function useDeleteVideo() {
   const qc = useQueryClient();
   return useMutation({
