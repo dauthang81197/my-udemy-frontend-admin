@@ -29,6 +29,12 @@ export function SectionTable({ courseId, data, loading, onEdit, onDelete }: Sect
       ellipsis: true,
     },
     {
+      title: 'Sort',
+      dataIndex: 'sort',
+      key: 'sort',
+      width: 80,
+    },
+    {
       title: 'Actions',
       key: 'actions',
       width: 160,

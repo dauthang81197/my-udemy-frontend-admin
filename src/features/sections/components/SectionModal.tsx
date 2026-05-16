@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Form, Input, Button, Space } from 'antd';
+import { Form, Input, InputNumber, Button, Space } from 'antd';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AppModal } from '@/components/common/AppModal';
@@ -23,11 +23,11 @@ export function SectionModal({ open, editing, courseId, loading, onClose, onSubm
     formState: { errors },
   } = useForm<SectionFormValues>({
     resolver: zodResolver(sectionSchema),
-    defaultValues: { title: '', courseId },
+    defaultValues: { title: '', courseId, sort: undefined },
   });
 
   useEffect(() => {
-    reset({ title: editing?.title ?? '', courseId });
+    reset({ title: editing?.title ?? '', courseId, sort: editing?.sort });
   }, [editing, courseId, reset, open]);
 
   return (
@@ -44,6 +44,21 @@ export function SectionModal({ open, editing, courseId, loading, onClose, onSubm
             name="title"
             control={control}
             render={({ field }) => <Input {...field} placeholder="Section title" />}
+          />
+        </Form.Item>
+
+        <Form.Item label="Sort" validateStatus={errors.sort ? 'error' : ''} help={errors.sort?.message}>
+          <Controller
+            name="sort"
+            control={control}
+            render={({ field }) => (
+              <InputNumber
+                {...field}
+                min={0}
+                placeholder="Sort order"
+                style={{ width: '100%' }}
+              />
+            )}
           />
         </Form.Item>
 
