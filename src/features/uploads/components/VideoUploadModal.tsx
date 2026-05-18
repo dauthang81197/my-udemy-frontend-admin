@@ -12,7 +12,7 @@ import { useUploadVideo, useUploadMultipleVideos } from '../hooks/useVideoAction
 const { Dragger } = Upload;
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(200),
+  nameSection: z.string().min(1, 'Name is required').max(200),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -39,7 +39,7 @@ export function VideoUploadModal({ open, onClose }: VideoUploadModalProps) {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '' },
+    defaultValues: { nameSection: '' },
   });
 
   const handleClose = () => {
@@ -66,12 +66,12 @@ export function VideoUploadModal({ open, onClose }: VideoUploadModalProps) {
 
     if (multipleMode) {
       uploadMultiple(
-        { nameSection: values.name, files: selectedFiles, onProgress: setProgress },
+        { nameSection: values.nameSection, files: selectedFiles, onProgress: setProgress },
         { onSuccess: handleClose },
       );
     } else {
       uploadVideo(
-        { name: values.name, file: selectedFiles[0], onProgress: setProgress },
+        { nameSection: values.nameSection, file: selectedFiles[0], onProgress: setProgress },
         { onSuccess: handleClose },
       );
     }
@@ -107,11 +107,11 @@ export function VideoUploadModal({ open, onClose }: VideoUploadModalProps) {
 
         <Form.Item
           label={multipleMode ? 'Section Name' : 'Video Name'}
-          validateStatus={errors.name ? 'error' : ''}
-          help={errors.name?.message}
+          validateStatus={errors.nameSection ? 'error' : ''}
+          help={errors.nameSection?.message}
         >
           <Controller
-            name="name"
+            name="nameSection"
             control={control}
             render={({ field }) => (
               <Input
@@ -162,7 +162,7 @@ export function VideoUploadModal({ open, onClose }: VideoUploadModalProps) {
               {isPending
                 ? 'Uploading...'
                 : multipleMode
-                  ? `Upload ${fileList.length > 0 ? `(${fileList.length})` : ''}`
+                  ? `Upload${fileList.length > 0 ? ` (${fileList.length})` : ''}`
                   : 'Upload'}
             </Button>
           </Space>

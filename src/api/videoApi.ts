@@ -1,3 +1,4 @@
+import axios from 'axios';
 import axiosInstance from "./axiosInstance";
 import { env } from "@/config/env";
 import type {
@@ -8,6 +9,89 @@ import type {
 import type { VideoFile } from "@/types/video.types";
 
 const BASE = `${env.courseServicePrefix}/admin/videos`;
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB - S3 minimum part size
+
+interface InitiateResponse {
+  key: string;
+  uploadId: string;
+}
+
+interface PartInfo {
+  partNumber: number;
+  eTag: string;
+}
+
+interface CompleteUploadRequest {
+  key: string;
+  uploadId: string;
+  nameSection: string;
+  originalFilename: string;
+  contentType: string;
+  fileSize: number;
+  parts: PartInfo[];
+}
+
+// Plain axios for direct S3 uploads — no auth headers, no timeout
+const s3Axios = axios.create({ timeout: 0 });
+
+async function uploadFileWithMultipart(
+  file: File,
+  nameSection: string,
+  onProgress?: (percent: number) => void,
+): Promise<VideoFile> {
+  const initiateRes = await axiosInstance.post<ApiResponse<InitiateResponse>>(
+    `${BASE}/initiate`,
+    null,
+    { params: { filename: file.name } },
+  );
+  const { key, uploadId } = initiateRes.data.data;
+
+  const totalParts = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+  const parts: PartInfo[] = [];
+
+  for (let i = 0; i < totalParts; i++) {
+    const partNumber = i + 1;
+    const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+
+    const presignRes = await axiosInstance.get<ApiResponse<{ url: string }>>(
+      `${BASE}/presign`,
+      { params: { key, uploadId, partNumber } },
+    );
+    const presignedUrl = presignRes.data.data.url;
+
+    const putRes = await s3Axios.put(presignedUrl, chunk, {
+      headers: { 'Content-Type': file.type },
+      onUploadProgress: (event) => {
+        if (onProgress && event.total) {
+          const overall = ((i + event.loaded / event.total) / totalParts) * 100;
+          onProgress(Math.round(overall));
+        }
+      },
+    });
+
+    const eTag = putRes.headers['etag'] ?? putRes.headers['ETag'];
+    if (!eTag) {
+      throw new Error(`ETag is null for part ${partNumber}. Ensure CORS ExposeHeaders includes ETag on the R2 bucket.`);
+    }
+    parts.push({ partNumber, eTag: eTag as string });
+  }
+
+  const body: CompleteUploadRequest = {
+    key,
+    uploadId,
+    nameSection,
+    originalFilename: file.name,
+    contentType: file.type,
+    fileSize: file.size,
+    parts,
+  };
+
+  const completeRes = await axiosInstance.post<ApiResponse<VideoFile>>(
+    `${BASE}/complete`,
+    body,
+  );
+  return completeRes.data.data;
+}
 
 export const videoApi = {
   getAll: (params?: PaginationParams) =>
@@ -17,47 +101,30 @@ export const videoApi = {
     axiosInstance.get<ApiResponse<VideoFile>>(`${BASE}/${id}`),
 
   upload: (
-    name: string,
     file: File,
-    onProgress?: (percent: number) => void,
-  ) => {
-    const formData = new FormData();
-    formData.append("nameSection", name);
-    formData.append("file", file);
-    return axiosInstance.post<ApiResponse<VideoFile>>(
-      `${BASE}/upload`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (event) => {
-          if (onProgress && event.total) {
-            onProgress(Math.round((event.loaded * 100) / event.total));
-          }
-        },
-      },
-    );
-  },
-
-  uploadMultiple: (
     nameSection: string,
-    files: File[],
     onProgress?: (percent: number) => void,
-  ) => {
-    const formData = new FormData();
-    formData.append("nameSection", nameSection);
-    files.forEach((file) => formData.append("files", file));
-    return axiosInstance.post<ApiResponse<VideoFile[]>>(
-      `${BASE}/upload-multiple`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (event) => {
-          if (onProgress && event.total) {
-            onProgress(Math.round((event.loaded * 100) / event.total));
-          }
-        },
-      },
-    );
+  ) => uploadFileWithMultipart(file, nameSection, onProgress),
+
+  uploadMultiple: async (
+    files: File[],
+    nameSection: string,
+    onProgress?: (percent: number) => void,
+  ): Promise<VideoFile[]> => {
+    const results: VideoFile[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const result = await uploadFileWithMultipart(
+        files[i],
+        nameSection,
+        onProgress
+          ? (percent) => {
+              onProgress(Math.round(((i + percent / 100) / files.length) * 100));
+            }
+          : undefined,
+      );
+      results.push(result);
+    }
+    return results;
   },
 
   delete: (id: string) =>
