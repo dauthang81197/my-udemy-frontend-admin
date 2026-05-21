@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 import axiosInstance from "./axiosInstance";
 import { env } from "@/config/env";
 import type {
@@ -39,6 +39,11 @@ async function uploadFileWithMultipart(
   nameSection: string,
   onProgress?: (percent: number) => void,
 ): Promise<VideoFile> {
+  console.log("File:", {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+  });
   const initiateRes = await axiosInstance.post<ApiResponse<InitiateResponse>>(
     `${BASE}/initiate`,
     null,
@@ -52,7 +57,7 @@ async function uploadFileWithMultipart(
   for (let i = 0; i < totalParts; i++) {
     const partNumber = i + 1;
     const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-
+    console.log(`Part ${partNumber}: chunk size = ${chunk.size} bytes`);
     const presignRes = await axiosInstance.get<ApiResponse<{ url: string }>>(
       `${BASE}/presign`,
       { params: { key, uploadId, partNumber } },
@@ -60,7 +65,7 @@ async function uploadFileWithMultipart(
     const presignedUrl = presignRes.data.data.url;
 
     const putRes = await s3Axios.put(presignedUrl, chunk, {
-      headers: { 'Content-Type': file.type },
+      headers: { "Content-Type": file.type },
       onUploadProgress: (event) => {
         if (onProgress && event.total) {
           const overall = ((i + event.loaded / event.total) / totalParts) * 100;
@@ -69,9 +74,11 @@ async function uploadFileWithMultipart(
       },
     });
 
-    const eTag = putRes.headers['etag'] ?? putRes.headers['ETag'];
+    const eTag = putRes.headers["etag"] ?? putRes.headers["ETag"];
     if (!eTag) {
-      throw new Error(`ETag is null for part ${partNumber}. Ensure CORS ExposeHeaders includes ETag on the R2 bucket.`);
+      throw new Error(
+        `ETag is null for part ${partNumber}. Ensure CORS ExposeHeaders includes ETag on the R2 bucket.`,
+      );
     }
     parts.push({ partNumber, eTag: eTag as string });
   }
@@ -85,11 +92,12 @@ async function uploadFileWithMultipart(
     fileSize: file.size,
     parts,
   };
-
+  console.log("Parts to send:", JSON.stringify(parts, null, 2));
   const completeRes = await axiosInstance.post<ApiResponse<VideoFile>>(
     `${BASE}/complete`,
     body,
   );
+
   return completeRes.data.data;
 }
 
@@ -118,7 +126,9 @@ export const videoApi = {
         nameSection,
         onProgress
           ? (percent) => {
-              onProgress(Math.round(((i + percent / 100) / files.length) * 100));
+              onProgress(
+                Math.round(((i + percent / 100) / files.length) * 100),
+              );
             }
           : undefined,
       );
