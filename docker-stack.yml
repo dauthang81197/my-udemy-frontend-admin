@@ -1,10 +1,10 @@
-version: '3.8'
+version: "3.8"
 
 services:
   frontend-admin:
     image: ${FRONTEND_ADMIN_IMAGE:-your-dockerhub-username/my-udemy-frontend-admin:latest}
     ports:
-      - "80:80"
+      - "3001:3001"
     networks:
       - my-udemy-net
     deploy:
